@@ -10,7 +10,7 @@ MyTcpSocket::~MyTcpSocket()
 MyTcpSocket::MyTcpSocket(QObject *par): QThread(par)
 {
     qRegisterMetaType<QAbstractSocket::SocketError>();
-    _socket = nullptr;
+    _socktcp = nullptr;
     _sockThread = new QThread();
     this->moveToThread(_sockThread); //负责数据发送
     connect(_sockThread, SIGNAL(finished()), this, SLOT(closeSocket()));
@@ -19,7 +19,7 @@ MyTcpSocket::MyTcpSocket(QObject *par): QThread(par)
     hasrecv = 0;
 }
 
-bool MyTcpSocket::connectToServer(QString, QString, QIODeviceBase::OpenModeFlag)
+bool MyTcpSocket::connectToServer(QString ip, QString port, QIODeviceBase::OpenModeFlag flag)
 {
     _sockThread->start();
     bool retVal;
@@ -34,7 +34,7 @@ bool MyTcpSocket::connectToServer(QString, QString, QIODeviceBase::OpenModeFlag)
     return false;
 }
 
-bool MyTcpSocket::connectServer(QString ip, QString port, QIODeviceBase::OpenModeFlag)
+bool MyTcpSocket::connectServer(QString ip, QString port, QIODeviceBase::OpenModeFlag flag)
 {
     if (_socktcp == nullptr) _socktcp = new QTcpSocket();
     // 以异步的方式连接到指定ip和端口的服务器，成功后会发送connected信号
@@ -46,8 +46,22 @@ bool MyTcpSocket::connectServer(QString ip, QString port, QIODeviceBase::OpenMod
 
     if (_socktcp->waitForConnected(5000))
         return true;
-    _socktcp->close;
+    _socktcp->close();
     return false;
+}
+
+void MyTcpSocket::closeSocket()
+{
+    if (_socktcp && _socktcp->isOpen())
+        _socktcp->close();
+}
+
+void MyTcpSocket::recvFromSocket()
+{
+    /*
+     * 接收服务端的数据并转化成客户端的MESG格式，送入recv_queue
+    */
+
 }
 
 
