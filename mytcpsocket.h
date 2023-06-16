@@ -46,9 +46,9 @@ signals:
     void sendTextOver();
 };
 
-inline MyTcpSocket::errorString() { return _socktcp->errorString(); }
+inline QString MyTcpSocket::errorString() { return _socktcp->errorString(); }
 
-inline MyTcpSocket::getLocalIP()
+inline quint32 MyTcpSocket::getLocalIP()
 {
     if (_socktcp->isOpen())
     {

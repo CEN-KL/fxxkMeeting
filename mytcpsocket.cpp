@@ -90,7 +90,8 @@ void MyTcpSocket::recvFromSocket()
         quint32 data_size = data_len;
         if (recvbuf[0] == '$' && recvbuf[MSG_HEADER + data_size] == '#')
         {
-            uint16_t = qFromBigEndian<uint16_t>(recvbuf + 1, 2, &type);
+            uint16_t type;
+            qFromBigEndian<uint16_t>(recvbuf + 1, 2, &type);
             MSG_TYPE msgtype = static_cast<MSG_TYPE>(type);
             qDebug() << "recv data type: " << msgtype;
             // 分别处理不同类型的消息
@@ -106,7 +107,7 @@ void MyTcpSocket::recvFromSocket()
                 }
                 else
                 {
-                    memset(msg, 0, sizeof(msg));
+                    memset(msg, 0, sizeof(MESG));
                     msg->msg_type = msgtype;
                     msg->data = new uchar[data_size];
                     if (msg->data == nullptr)
@@ -176,9 +177,9 @@ void MyTcpSocket::recvFromSocket()
                         memset(msg->data, 0, data_size);
                         uint32_t ip;
                         int pos = 0;
-                        for (int i = 0; i < data_size / sizeof(uint32_t); i++)
+                        for (decltype(data_size) i = 0; i < data_size / sizeof(uint32_t); i++)
                         {
-                            qFromBigEndian<uint32_t>(recvbuf + MSG_HEADER + pos, sizeof(uint32_t));
+                            qFromBigEndian<uint32_t>(recvbuf + MSG_HEADER + pos, sizeof(uint32_t), &ip);
                             memcpy_s(msg->data + pos, data_size - pos, &ip, sizeof(uint32_t));
                             pos += sizeof(uint32_t);
                         }
@@ -201,7 +202,7 @@ void MyTcpSocket::recvFromSocket()
                     {
                         MESG *msg = new MESG();
                         memset(msg, 0, sizeof(MESG));
-                        msg->msg_type = msg_type;
+                        msg->msg_type = msgtype;
                         msg->data = new uchar[rdc.size()];
                         memset(msg->data, 0, rdc.size());
                         memcpy_s(msg->data, rdc.size(), rdc.data(), rdc.size());
@@ -243,7 +244,7 @@ void MyTcpSocket::recvFromSocket()
             {
                 qDebug() << "msg type error";
             }
-            hasrecv -= static_cast<quint64>(data_size + 1 + MSG_HEADER)
+            hasrecv -= static_cast<quint64>(data_size + 1 + MSG_HEADER);
             memmove_s(recvbuf, 4 * MB, recvbuf + MSG_HEADER + data_size + 1, hasrecv);
         }
         else
