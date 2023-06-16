@@ -344,3 +344,19 @@ void MyTcpSocket::sendData(MESG *send)
     if (send)
         delete send;
 }
+
+void MyTcpSocket::errorDetect(QAbstractSocket::SocketError error)
+{
+    qDebug() << "sock error" << QThread::currentThreadId();
+    MESG *msg = new MESG();
+    memset(msg, 0, sizeof(MESG));
+    if (error == QAbstractSocket::RemoteHostClosedError)
+    {
+        msg->msg_type = RemoteHostClosedError;
+    }
+    else
+    {
+        msg->msg_type = OtherNetError;
+    }
+    queue_recv.push_msg(msg);
+}
