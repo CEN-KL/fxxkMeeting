@@ -14,12 +14,14 @@ SOURCES += \
     main.cpp \
     mytcpsocket.cpp \
     netheader.cpp \
+    recvsolve.cpp \
     widget.cpp
 
 HEADERS += \
     logqueue.h \
     mytcpsocket.h \
     netheader.h \
+    recvsolve.h \
     widget.h
 
 FORMS += \
