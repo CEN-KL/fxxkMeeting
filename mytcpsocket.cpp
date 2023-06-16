@@ -360,3 +360,35 @@ void MyTcpSocket::errorDetect(QAbstractSocket::SocketError error)
     }
     queue_recv.push_msg(msg);
 }
+
+void MyTcpSocket::stopImmedeiately()
+{
+    {
+        QMutexLocker locker(&m_lock);
+        m_isCanRun = false;
+    }
+    _sockThread->quit();
+    _sockThread->wait();
+}
+
+qint64 MyTcpSocket::readn(char *buf, quint64 maxsize, int n)
+{
+    quint64 hastoread = n;
+    quint64 hasread = 0;
+    do
+    {
+        qint64 ret = _socktcp->read(buf + hasread, hastoread);
+        if (ret < 0)
+        {
+            return -1;
+        }
+        if (ret == 0)
+        {
+            return hasread;
+        }
+        hasread += ret;
+        hastoread -= ret;
+    } while (hastoread > 0 && hasread < maxsize);
+    return hasread;
+}
+
