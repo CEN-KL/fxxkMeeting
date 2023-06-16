@@ -16,7 +16,7 @@ private:
 signals:
     void datarecv(MESG *);
 public slots:
-    stopImmediately();
+    void stopImmediately();
 };
 
 #endif // RECVSOLVE_H

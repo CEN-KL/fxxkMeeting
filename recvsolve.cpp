@@ -1,4 +1,5 @@
 #include "recvsolve.h"
+extern QUEUE_DATA<MESG> queue_recv;
 
 RecvSolve::RecvSolve(QObject *par) : QThread(par)
 {
