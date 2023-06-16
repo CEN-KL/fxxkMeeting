@@ -46,7 +46,7 @@ bool MyTcpSocket::connectServer(QString ip, QString port, QIODeviceBase::OpenMod
     // 以异步的方式连接到指定ip和端口的服务器，成功后会发送connected信号
     _socktcp->connectToHost(ip, port.toUShort(), flag);
     // readReady -- 当缓冲区有新数据需要读取时此信号被发射
-    connect(_socktcp, SIGNAL(readReady()), this, SLOT(recvFromSocket()), Qt::UniqueConnection);
+    connect(_socktcp, SIGNAL(readyRead()), this, SLOT(recvFromSocket()), Qt::UniqueConnection);
     // 处理socket错误
     connect(_socktcp, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(errorDetect(QAbstractSocket::SocketError)), Qt::UniqueConnection);
 
@@ -253,4 +253,94 @@ void MyTcpSocket::recvFromSocket()
     }
 }
 
+void MyTcpSocket::run()
+{
+    /*
+     * 处理数据发送
+    */
+    m_isCanRun = true;
+    while (true)
+    {
+        {
+            QMutexLocker locker(&m_lock);
+            if (!m_isCanRun) return;
+        }
+        MESG *send = queue_send.pop_msg();
+        if (send == nullptr) continue;
+        QMetaObject::invokeMethod(this, "sendData", Q_ARG(MESG*, send));
+    }
+}
 
+void MyTcpSocket::sendData(MESG *send)
+{
+    if (_socktcp->state() == QAbstractSocket::UnconnectedState)
+    {
+        emit sendTextOver();
+        if (send->data) delete send->data;
+        if (send) delete send;
+        return;
+    }
+    // ------------------ 组装消息 -----------------------
+    quint64 bytes_to_write = 0;
+    // 第一个字节永远是 $
+    sendbuf[bytes_to_write++] = '$';
+    //消息类型 2字节
+    qToBigEndian<quint16>(send->msg_type, sendbuf + bytes_to_write);
+    bytes_to_write += 2;
+    // 发送者ip
+    quint32 ip = _socktcp->localAddress().toIPv4Address();
+    qToBigEndian<quint32>(ip, sendbuf + bytes_to_write);
+    bytes_to_write += 4;
+
+    if (send->msg_type == IMG_SEND || send->msg_type == AUDIO_SEND || send->msg_type == TEXT_SEND || send->msg_type == CLOSE_CAMERA || send->msg_type == CREATE_MEETING)
+    {
+        qToBigEndian<quint32>(send->len, sendbuf + bytes_to_write);
+        bytes_to_write += 4;
+    }
+    else if(send->msg_type == JOIN_MEETING)
+    {
+        qToBigEndian<quint32>(send->len, sendbuf + bytes_to_write);
+        bytes_to_write += 4;
+        uint32_t room;
+        memcpy(&room, send->data, send->len);
+        qToBigEndian<quint32>(room, send->data);
+    }
+
+    // 数据拷入sendbuf
+    memcpy(sendbuf + bytes_to_write, send->data, send->len);
+    bytes_to_write += send->len;
+    sendbuf[bytes_to_write++] = '#';
+
+    // ------------------- write to server ----------------------
+    qint64 hastowrite = bytes_to_write;
+    qint64 ret = 0, haswrite = 0;
+    while ((ret = _socktcp->write((char *)sendbuf + haswrite, hastowrite - haswrite)) < hastowrite)
+    {
+        if (ret == -1)
+        {
+            if (_socktcp->error() == QAbstractSocket::TemporaryError)
+            {
+                ret = 0;
+            }
+            else
+            {
+                qDebug() << "network error";
+                break;
+            }
+        }
+        haswrite += ret;
+        hastowrite -= ret;
+    }
+
+    _socktcp->waitForBytesWritten(); // This function blocks until at least one byte has been written on the socket and the bytesWritten() signal has been emitted. The function will timeout after msecs milliseconds; the default timeout is 30000 milliseconds.
+
+    if (send->msg_type == TEXT_SEND)
+    {
+        emit sendTextOver();
+    }
+
+    if (send->data)
+        delete send->data;
+    if (send)
+        delete send;
+}
