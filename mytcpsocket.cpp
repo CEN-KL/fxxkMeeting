@@ -392,3 +392,21 @@ qint64 MyTcpSocket::readn(char *buf, quint64 maxsize, int n)
     return hasread;
 }
 
+void MyTcpSocket::disconnectFromHost()
+{
+    if (this->isRunning())  // 这里是关闭写线程，因为是由run方法进行的
+    {
+        QMutexLocker locker(&m_lock);
+        m_isCanRun = false;
+    }
+
+    if (_sockThread->isRunning()) // 这里是关闭读线程 在构造函数中被moveToThread了
+    {
+        _sockThread->quit();
+        _sockThread->wait();
+    }
+
+    queue_send.clear();
+    queue_recv.clear();
+    audio_recv.clear();
+}

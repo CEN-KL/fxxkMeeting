@@ -46,4 +46,17 @@ signals:
     void sendTextOver();
 };
 
+inline MyTcpSocket::errorString() { return _socktcp->errorString(); }
+
+inline MyTcpSocket::getLocalIP()
+{
+    if (_socktcp->isOpen())
+    {
+        return _socktcp->localAddress().toIPv4Address();
+    }
+    else{
+        return -1;
+    }
+}
+
 #endif // MYTCPSOCKET_H
