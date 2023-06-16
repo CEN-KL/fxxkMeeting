@@ -1,4 +1,5 @@
 QT       += core gui
+QT       += network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -11,11 +12,13 @@ CONFIG += c++17
 SOURCES += \
     logqueue.cpp \
     main.cpp \
+    mytcpsocket.cpp \
     netheader.cpp \
     widget.cpp
 
 HEADERS += \
     logqueue.h \
+    mytcpsocket.h \
     netheader.h \
     widget.h
 
