@@ -13,7 +13,7 @@ AudioInput::AudioInput(QObject *par) : QObject(par)
     buf = new char[2 * MB];
     QAudioFormat format;
     // set format
-    format.setSampleRate(44100);
+    format.setSampleRate(16000);
     format.setChannelCount(2);
     format.setSampleFormat(QAudioFormat::Int16);
     QAudioDevice device = QMediaDevices::defaultAudioInput();
@@ -24,7 +24,7 @@ AudioInput::AudioInput(QObject *par) : QObject(par)
     }
     audiosource = new QAudioSource(format, this);
     connect(audiosource, SIGNAL(stateChanged(QAudio::State)), this, SLOT(handleStateChanged(QAudio::State)));
-
+    inputdevice = nullptr;
 }
 
 AudioInput::~AudioInput()
