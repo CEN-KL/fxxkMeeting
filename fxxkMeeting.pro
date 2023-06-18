@@ -19,6 +19,7 @@ SOURCES += \
     netheader.cpp \
     partner.cpp \
     recvsolve.cpp \
+    screen.cpp \
     sendimg.cpp \
     sendtext.cpp \
     widget.cpp
@@ -31,6 +32,7 @@ HEADERS += \
     netheader.h \
     partner.h \
     recvsolve.h \
+    screen.h \
     sendimg.h \
     sendtext.h \
     widget.h
