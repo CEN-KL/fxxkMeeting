@@ -17,6 +17,7 @@ SOURCES += \
     main.cpp \
     mytcpsocket.cpp \
     netheader.cpp \
+    partner.cpp \
     recvsolve.cpp \
     sendimg.cpp \
     sendtext.cpp \
@@ -28,6 +29,7 @@ HEADERS += \
     logqueue.h \
     mytcpsocket.h \
     netheader.h \
+    partner.h \
     recvsolve.h \
     sendimg.h \
     sendtext.h \
