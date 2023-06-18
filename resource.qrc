@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/myImage">
+        <file>resourse/1.jpg</file>
+    </qresource>
+    <qresource prefix="/myEffect">
+        <file>resourse/2.wav</file>
+        <file>resourse/3.gif</file>
+    </qresource>
+</RCC>
