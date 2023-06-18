@@ -2,7 +2,7 @@
 #define NETHEADER_H
 
 #include <QMetaType>
-#include <Qmutex>
+#include <QMutex>
 #include <QQueue>
 #include <QImage>
 #include <QWaitCondition>
