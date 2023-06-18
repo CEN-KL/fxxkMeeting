@@ -13,6 +13,7 @@ CONFIG += c++17
 SOURCES += \
     audioinput.cpp \
     audiooutput.cpp \
+    frames.cpp \
     logqueue.cpp \
     main.cpp \
     mytcpsocket.cpp \
@@ -27,6 +28,7 @@ SOURCES += \
 HEADERS += \
     audioinput.h \
     audiooutput.h \
+    frames.h \
     logqueue.h \
     mytcpsocket.h \
     netheader.h \
