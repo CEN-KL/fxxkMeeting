@@ -18,6 +18,7 @@ SOURCES += \
     mytcpsocket.cpp \
     netheader.cpp \
     recvsolve.cpp \
+    sendimg.cpp \
     widget.cpp
 
 HEADERS += \
@@ -27,6 +28,7 @@ HEADERS += \
     mytcpsocket.h \
     netheader.h \
     recvsolve.h \
+    sendimg.h \
     widget.h
 
 FORMS += \
