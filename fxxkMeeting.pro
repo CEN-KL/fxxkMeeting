@@ -18,6 +18,7 @@ SOURCES += \
     logqueue.cpp \
     main.cpp \
     mytcpsocket.cpp \
+    mytextedit.cpp \
     netheader.cpp \
     partner.cpp \
     recvsolve.cpp \
@@ -33,6 +34,7 @@ HEADERS += \
     frames.h \
     logqueue.h \
     mytcpsocket.h \
+    mytextedit.h \
     netheader.h \
     partner.h \
     recvsolve.h \
