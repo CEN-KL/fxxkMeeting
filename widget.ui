@@ -12,7 +12,7 @@
   </property>
   <property name="font">
    <font>
-    <family>宋体</family>
+    <family>Fira Code</family>
     <pointsize>12</pointsize>
    </font>
   </property>
@@ -115,13 +115,13 @@
     </attribute>
    </widget>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>10</x>
      <y>40</y>
      <width>1141</width>
-     <height>61</height>
+     <height>67</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -229,13 +229,13 @@
     </item>
    </layout>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>80</x>
      <y>600</y>
      <width>329</width>
-     <height>60</height>
+     <height>67</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout_7">
