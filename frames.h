@@ -15,6 +15,9 @@ public:
     ~Frames() override;
     void setVideoSink( QVideoSink * newVideoSink );
     QVideoSink * videoSink() const;
+    void stopCam();
+    inline bool isCameraActive() const { return m_cam->isActive(); }
+    inline QCamera::Error cameraError() const { return m_cam->error(); }
 
 private:
     Q_DISABLE_COPY( Frames )
@@ -25,10 +28,10 @@ private:
     QString m_fpsString;
     int m_fps;
     QTimer * m_1s;
+
 private slots:
     void newFrame(const QVideoFrame &frame);
     void initCam();
-    void stopCam();
     void timer();
 signals:
     void imageCaptured(const QImage &);

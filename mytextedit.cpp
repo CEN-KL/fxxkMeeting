@@ -10,7 +10,8 @@ MyTextEdit::MyTextEdit(QWidget *par): QWidget(par)
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     edit = new QPlainTextEdit();
-    edit->setPlaceholderText(QString::fromUtf8("&#x8F93;&#x5165;@&#x53EF;&#x4EE5;&#x5411;&#x5BF9;&#x5E94;&#x7684;IP&#x53D1;&#x9001;&#x6570;&#x636E;"));
+    edit->setPlaceholderText(QString::fromUtf8("输入@可向对应IP发送数据"));
+//    edit->setPlaceholderText(QString::fromUtf8("&#x8F93;&#x5165;@&#x53EF;&#x4EE5;&#x5411;&#x5BF9;&#x5E94;&#x7684;IP&#x53D1;&#x9001;&#x6570;&#x636E;"));
     layout->addWidget(edit);
     completer = nullptr;
     connect(edit, SIGNAL(textChanged()), this, SLOT(complete));

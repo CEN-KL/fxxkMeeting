@@ -5,6 +5,8 @@
 #include <QCamera>
 #include <QImageCapture>
 #include <QMap>
+#include <QStringListModel>
+#include <QListWidgetItem>
 
 #include "sendimg.h"
 #include "recvsolve.h"
@@ -12,6 +14,12 @@
 #include "mytcpsocket.h"
 #include "audioinput.h"
 #include "audiooutput.h"
+#include "chatmessage.h"
+#include "partner.h"
+#include "frames.h"
+#include "screen.h"
+#include "logqueue.h"
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
@@ -30,36 +38,64 @@ private:
 
     static QRect pos;
     quint32 mainIp; //主屏幕显示的IP图像
-    QCamera *_camera;
-    QImageCapture *_imgcapture; //截屏
+//    QImageCapture *_imgcapture; //截屏
     bool _createmeet; // 是否创建会议
     bool _joinmeet;   // 是否加入会议
     bool _openCamera; // 是否打开摄像头
 
-    // MyVideoSurface *_myvideosurface;
+    // 直接与服务器进行数据收发
+    MyTcpSocket *_mytcpsocket;
 
-    QVideoFrame mainshow;
-
+    // 视频帧发送、接收
+    Frames * _frames;
+    QVideoFrame _mainshow;
     SendImg *_sendImg;
     QThread *_imgThread;
 
+    // 接收来自MyTcpSocket传来的MESG数据
     RecvSolve *_recvThread;
 
+    // 文本数据传输
     SendText *_sendText;
     QThread *_textThread;
 
-    MyTcpSocket *_mytcpsocket;
-//    void paintEvent(QPaintEvent *event);
+    void paintEvent(QPaintEvent *event);
 
-    //QMap
+    QMap<quint32, Partner *> _partner; // 记录房间用户
+    Partner *addPartner(quint32);
+    void removePartner(quint32);
+    void clearPartner();
+    void closeImg(quint32);
 
     // deal message
+    void dealMessage(ChatMessage *messageW, QListWidgetItem *item, QString text, QString time, QString ip, ChatMessage::user_type utype);
+    void dealMessageTime(QString curMsgTime);
 
     AudioInput *_ainput;
     QThread *_ainputThread;
-    AudioOutput *aoutput;
+    AudioOutput *_aoutput;
 
-    QStringList iplist;
+    QStringList _iplist;
 
+private slots:
+    void on_btnCreate_clicked();
+    void on_btnExit_clicked();
+    void on_btnJoinMeeting_clicked();
+    void on_btnConnect_clicked();
+    void on_btnAudio_clicked();
+    void on_btnVideo_clicked();
+    void on_btnSend_clicked();
+
+    void textSend(); // connected with MyTcpSocket::sendTextOver()
+    void cameraImgCaptured(QImage); //connectd with Frames::imageCpatured(QImage)
+    void dataSolve(MESG *); // connected with RecvSolve::datarecv(MESG *);
+    void audioError(QString);
+    void speaks(QString);
+
+signals:
+    void textReady(MSG_TYPE, QString);
+    void pushImg(QImage);  // emitted on slot Widget::cameraImgCaptured(QImage)
+    void startAudio();
+    void stopAudio();
 };
 #endif // WIDGET_H
