@@ -59,7 +59,7 @@ Widget::Widget(QWidget *parent)
 
     // 数据接收并处理
     _recvThread = new RecvSolve();
-    connect(_recvThread, SIGNAL(datarecv(MESG*)), this, SLOT(dataSolve(MESG*)));
+    connect(_recvThread, SIGNAL(datarecv(MESG*)), this, SLOT(dataSolve(MESG*)), Qt::BlockingQueuedConnection);
     _recvThread->start();
 
     // 传输视频线程
@@ -94,6 +94,10 @@ Widget::Widget(QWidget *parent)
     connect(_ainput,  SIGNAL(audioInputError(QString)),  this, SLOT(audioError(QString)));
     connect(_aoutput, SIGNAL(audioOutputError(QString)), this, SLOT(audioError(QString)));
     connect(_aoutput, SIGNAL(speaker(QString)), this, SLOT(speaks(QString)));
+
+    // 播放音效
+    _soundEffect = new QSoundEffect(this);
+    _soundEffect->setSource(QUrl::fromLocalFile(":/myEffect/resourse/2.wav");
 
     // 滚动条
     ui->scrollArea->verticalScrollBar()->setStyleSheet("QScrollBar:vertical { width:8px; background:rgba(0,0,0,0%); margin:0px,0px,0px,0px; padding-top:9px; padding-bottom:9px; } QScrollBar::handle:vertical { width:8px; background:rgba(0,0,0,25%); border-radius:4px; min-height:20; } QScrollBar::handle:vertical:hover { width:8px; background:rgba(0,0,0,50%); border-radius:4px; min-height:20; } QScrollBar::add-line:vertical { height:9px;width:8px; border-image:url(:/images/a/3.png); subcontrol-position:bottom; } QScrollBar::sub-line:vertical { height:9px;width:8px; border-image:url(:/images/a/1.png); subcontrol-position:top; } QScrollBar::add-line:vertical:hover { height:9px;width:8px; border-image:url(:/images/a/4.png); subcontrol-position:bottom; } QScrollBar::sub-line:vertical:hover { height:9px;width:8px; border-image:url(:/images/a/2.png); subcontrol-position:top; } QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical { background:rgba(0,0,0,10%); border-radius:4px; }");
@@ -306,6 +310,15 @@ void Widget::dealMessageTime(QString curMsgTime)
     }
 }
 
+void Widget::textSend()
+{
+    qDebug() << "send text over";
+    QListWidgetItem* lastItem = ui->listWidget->item(ui->listWidget->count() - 1);
+    ChatMessage* messageW = (ChatMessage *)ui->listWidget->itemWidget(lastItem);
+    messageW->setTextSuccess();
+    ui->sendmsg->setDisabled(false);
+}
+
 void Widget::cameraImgCaptured(QImage img)
 {
     QTransform matrix;
@@ -320,6 +333,211 @@ void Widget::cameraImgCaptured(QImage img)
     Partner * p = _partner[_mytcpsocket->getLocalIP()];
     if (p)
         p->setPic(image);
+}
+
+void Widget::dataSolve(MESG *msg)
+{
+    if (msg->msg_type == CREATE_MEETING_RESPONSE)
+    {
+        int roomNo;
+        memcpy(&roomNo, msg->data, msg->len);
+        if (roomNo != 0)
+        {
+            QMessageBox::information(this, "Room No", QString("房间号：%1").arg(roomNo), QMessageBox::Yes, QMessageBox::Yes);
+
+            ui->groupBoxMainWindow->setTitle(QString("主屏幕(房间号: %1)").arg(roomNo));
+            ui->labOutLog->setText(QString("创建成功 房间号: %1").arg(roomno) );
+            WRITE_LOG("succeed creating room %d", roomNo);
+            _createmeet = true;
+            ui->btnExit->setDisabled(false);
+            ui->btnVideo->setDisabled(false);
+            ui->btnJoinMeeting->setDisabled(true);
+            // add myself
+            mainIp = _mytcpsocket->getLocalIP();
+            addPartner(mainIp);
+            ui->groupBoxMainWindow->setTitle(QHostAddress(mainIp).toString());
+            ui->labMainWindow->setPixmap(QPixmap::fromImage(QImage(":/myImage/resourse/1.jpg").scaled(ui->labMainWindow->size())));
+        }
+        else
+        {
+            _createmeet = false;
+            QMessageBox::information(this, "Room Information", QString("无可用房间"), QMessageBox::Yes, QMessageBox::Yes);
+            ui->labOutLog->setText(QString("无可用房间"));
+            ui->btnCreate->setDisabled(false);
+            WRITE_LOG("no empty room");
+        }
+    }
+    else if (msg->msg_type == JOIN_MEETING_RESPONSE)
+    {
+        qint32 c;
+        memcpy(&c, msg->data, msg->len);
+        if(c == 0)
+        {
+            QMessageBox::information(this, "Meeting Error", tr("会议不存在") , QMessageBox::Yes, QMessageBox::Yes);
+            ui->labOutLog->setText(QString("会议不存在"));
+            WRITE_LOG("meeting not exist");
+            ui->btnExit->setDisabled(true);
+            ui->btnVideo->setDisabled(true);
+            ui->btnJoinMeeting->setDisabled(false);
+            ui->btnConnect->setDisabled(true);
+            _joinmeet = false;
+        }
+        else if(c == -1)
+        {
+            QMessageBox::warning(this, "Meeting information", "成员已满，无法加入" , QMessageBox::Yes, QMessageBox::Yes);
+            ui->labOutLog->setText(QString("成员已满，无法加入"));
+            WRITE_LOG("full room, cannot join");
+        }
+        else if (c > 0)
+        {
+            QMessageBox::warning(this, "Meeting information", "加入成功" , QMessageBox::Yes, QMessageBox::Yes);
+            ui->labOutLog->setText(QString("加入成功"));
+            WRITE_LOG("succeed joining room");
+            //添加用户自己
+            addPartner(_mytcpsocket->getLocalIP());
+            mainIp = _mytcpsocket->getLocalIP();
+            ui->groupBoxMainWindow->setTitle(QHostAddress(mainIp).toString());
+            ui->labMainWindow->setPixmap(QPixmap::fromImage(QImage(":/myImage/resourse/1.jpg").scaled(ui->labMainWindow->size())));
+            ui->btnJoinMeeting->setDisabled(true);
+            ui->btnExit->setDisabled(false);
+            ui->btnCreate->setDisabled(true);
+            _joinmeet = true;
+        }
+    }
+    else if (msg->msg_type == IMG_RECV)
+    {
+        QHostAddress a(msg->ip);
+        qDebug() << a.toString();
+        QImage img;
+        img.loadFromData(msg->data, msg->len);
+        if (_partner.count(msg->ip) == 1)
+        {
+            auto *p = _partner[msg->ip];
+            p->setPic(img);
+        }
+        else
+        {
+            auto *p = addPartner(msg->ip);
+            p->setPic(img);
+        }
+
+        if (msg->ip == mainIp)
+        {
+            ui->labMainWindow->setPixmap(QPixmap::fromImage(img).scaled(ui->labMainWindow->size()));
+        }
+        repaint();
+    }
+    else if (msg->msg_type == TEXT_RECV)
+    {
+        QString str = QString::fromStdString(std::string((char *)msg->data, msg->len));
+        //qDebug() << str;
+        QString time = QString::number(QDateTime::currentDateTimeUtc().toSecsSinceEpoch());
+        ChatMessage *message = new ChatMessage(ui->listWidget);
+        QListWidgetItem *item = new QListWidgetItem();
+        dealMessageTime(time);
+        dealMessage(message, item, str, time, QHostAddress(msg->ip).toString() ,ChatMessage::User_She);
+        if(str.contains('@' + QHostAddress(_mytcpSocket->getlocalip()).toString()))
+        {
+            _soundEffect->play();
+        }
+    }
+    else if (msg->msg_type == PARTNER_JOIN)
+    {
+        Partner* p = addPartner(msg->ip);
+        if(p)
+        {
+            p->setPic(QImage(":/myImage/resourse/1.jpg"));
+            ui->labOutLog->setText(QString("%1 join meeting").arg(QHostAddress(msg->ip).toString()));
+            _iplist.append(QString("@") + QHostAddress(msg->ip).toString());
+            ui->plainTextEdit->setCompleter(iplist);
+        }
+    }
+    else if (msg->msg_type == PARTNER_JOIN2)
+    {
+        uint32_t ip;
+        int other = msg->len / sizeof(uint32_t), pos = 0;
+        qDebug("num of others: %d", other);
+        for (int i = 0; i < other; i++)
+        {
+            memcpy_s(&ip, sizeof(uint32_t), msg->data + pos , sizeof(uint32_t));
+            qDebug() << "copy ip";
+            pos += sizeof(uint32_t);
+            Partner* p = addPartner(ip);
+            if (p)
+            {
+                qDebug() << "start setting image";
+                p->setpic(QImage(":/myImage/resourse/1.jpg"));
+                iplist << QString("@") + QHostAddress(ip).toString();
+            }
+            qDebug() << "set image";
+        }
+        qDebug() << "record ip tp iplist";
+        ui->plainTextEdit->setCompleter(iplist);
+        ui->btnVideo->setDisabled(false);
+    }
+    else if (msg->msg_type == PARTNER_EXIT)
+    {
+        removePartner(msg->ip);
+        if(mainIp == msg->ip)
+        {
+            ui->labMainWindow->setPixmap(QPixmap::fromImage(QImage(":/myImage/resourse/1.jpg").scaled(ui->labMainWindow->size())));
+        }
+        if(_iplist.removeOne(QString("@") + QHostAddress(msg->ip).toString()))
+        {
+            ui->plainTextEdit->setCompleter(_iplist);
+        }
+        else
+        {
+            qDebug() << QHostAddress(msg->ip).toString() << "not exist";
+            WRITE_LOG("%s not exist",QHostAddress(msg->ip).toString().toStdString().c_str());
+        }
+        ui->labOutLog->setText(QString("%1 exit meeting").arg(QHostAddress(msg->ip).toString()));
+    }
+    else if (msg->msg_type == CLOSE_CAMERA)
+    {
+        qDebug() << "close camera handling...";
+        closeImg(msg->ip);
+    }
+    else if (msg->msg_type == RemoteHostClosedError)
+    {
+        clearPartner();
+        _mytcpsocket->disconnectFromHost();
+        _mytcpsocket->wait();
+        ui->labOutLog->setText(QString("关闭与服务器的连接"));
+        ui->btnCreate->setDisabled(true);
+        ui->btnExit->setDisabled(true);
+        ui->btnConnect->setDisabled(false);
+        ui->btnJoinMeeting->setDisabled(true);
+        //清除聊天记录
+        while(ui->listWidget->count() > 0)
+        {
+            QListWidgetItem *item = ui->listWidget->takeItem(0);
+            ChatMessage *chat = (ChatMessage *)ui->listWidget->itemWidget(item);
+            delete item;
+            delete chat;
+        }
+        _iplist.clear();
+        ui->plainTextEdit->setCompleter(_iplist);
+        if(_createmeet || _joinmeet) QMessageBox::warning(this, "Meeting Information", "会议结束" , QMessageBox::Yes, QMessageBox::Yes);
+    }
+    else if (msg->msg_type == OtherNetError)
+    {
+        QMessageBox::warning(this, "Network Error", "网络异常" , QMessageBox::Yes, QMessageBox::Yes);
+        clearPartner();
+        _mytcpsocket->disconnectFromHost();
+        _mytcpsocket->wait();
+        ui->labOutLog->setText(QString("网络异常......"));
+    }
+    if (msg->data)
+    {
+        delete msg->data;
+        msg->data = nullptr;
+    }
+    if (msg)
+    {
+        delete msg;
+        msg = nullptr;
+    }
 }
 
 Widget::~Widget()

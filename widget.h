@@ -7,6 +7,8 @@
 #include <QMap>
 #include <QStringListModel>
 #include <QListWidgetItem>
+#include <QPointer>
+#include <QSoundEffect>
 
 #include "sendimg.h"
 #include "recvsolve.h"
@@ -74,6 +76,7 @@ private:
     AudioInput *_ainput;
     QThread *_ainputThread;
     AudioOutput *_aoutput;
+    QPointer<QSoundEffect> _soundEffect; //音效
 
     QStringList _iplist;
 
@@ -85,6 +88,7 @@ private slots:
     void on_btnAudio_clicked();
     void on_btnVideo_clicked();
     void on_btnSend_clicked();
+    void on_horizontalSlider_valueChanged(int val) { emit volumnChange(val); }// 音量条
 
     void textSend(); // connected with MyTcpSocket::sendTextOver()
     void cameraImgCaptured(QImage); //connectd with Frames::imageCpatured(QImage)
@@ -97,5 +101,6 @@ signals:
     void pushImg(QImage);  // emitted on slot Widget::cameraImgCaptured(QImage)
     void startAudio();
     void stopAudio();
+    void volumnChange(int);
 };
 #endif // WIDGET_H
