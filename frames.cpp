@@ -14,7 +14,7 @@ Frames::Frames(QObject *par)
     m_1s->setInterval(100);
     m_1s->start();
 
-    initCam();
+//    initCam();
 }
 
 Frames::~Frames()
@@ -37,10 +37,11 @@ void Frames::newFrame(const QVideoFrame &frame)
         m_videoSink->setVideoFrame(frame);
 }
 
-void Frames::initCam()
+bool Frames::initCam()
 {
     m_cam = new QCamera(this);
     const auto settings = m_cam->cameraDevice().videoFormats();
+    if (settings.empty()) return false;
     auto s = settings.at(0);
     for (const auto &ss: settings)
     {
@@ -59,6 +60,7 @@ void Frames::initCam()
                                                         QVideoFrameFormat::pixelFormatToString( s.pixelFormat() ) );
     emit formatStringChanged();
     m_cam->start();
+    return true;
 }
 
 void Frames::stopCam()

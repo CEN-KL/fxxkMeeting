@@ -80,7 +80,7 @@ Widget::Widget(QWidget *parent)
     _sendText->moveToThread(_textThread);
     _sendText->start();
     _textThread->start();
-    connect(this, SIGNAL(textReady(MSG_TYPE, QString)), _sendText, SLOT(pushText(MSG_TYPE,QString)));
+    connect(this, SIGNAL(textReady(MSG_TYPE,QString)), _sendText, SLOT(pushText(MSG_TYPE,QString)));
 
     // 音频传输
     _ainput       = new AudioInput();
@@ -151,7 +151,7 @@ void Widget::on_btnConnect_clicked()
     {
         ui->labOutLog->setText("连接失败，请重新连接");
         WRITE_LOG("failed to connenct %s:%s", ip.toStdString().c_str(), port.toStdString().c_str());
-        QMessageBox::warning(this, "Connection error", _mytcpsocket->errorString() , QMessageBox::Yes, QMessageBox::Yes);
+//        QMessageBox::warning(this, "Connection error", _mytcpsocket->errorString() , QMessageBox::Yes, QMessageBox::Yes);
     }
 }
 
@@ -180,7 +180,7 @@ void Widget::on_btnJoinMeeting_clicked()
 
 void Widget::on_btnExit_clicked()
 {
-    if (_frames != nullptr)
+    if (_frames != nullptr && _frames->isCameraActive())
         _frames->stopCam();
     _createmeet = false;
     _joinmeet = false;
@@ -243,12 +243,18 @@ void Widget::on_btnVideo_clicked()
     }
     else
     {
-        _frames->initCam();
-        WRITE_LOG("open camera");
-        if (_frames->cameraError() == QCamera::NoError)
+        if (_frames->initCam())
         {
-            _imgThread->start();
-            ui->btnVideo->setText(QString(CLOSEVIDEO).toUtf8());
+            WRITE_LOG("open camera");
+            if (_frames->cameraError() == QCamera::NoError)
+            {
+                _imgThread->start();
+                ui->btnVideo->setText(QString(CLOSEVIDEO).toUtf8());
+            }
+        }
+        else
+        {
+            QMessageBox::warning(this, "Camera Error", "找不到摄像头", QMessageBox::Yes, QMessageBox::Yes);
         }
     }
 }
@@ -541,7 +547,7 @@ void Widget::dataSolve(MESG *msg)
     }
 }
 
-Partner *Widget::addPartner(quint32 ip)
+Partner *Widget::addPartner(const quint32 ip)
 {
     if (_partner.contains(ip)) return nullptr;
     Partner *p = new Partner(ui->scrollAreaWidgetContents, ip);
@@ -559,7 +565,7 @@ Partner *Widget::addPartner(quint32 ip)
     return p;
 }
 
-void Widget::removePartner(quint32 ip)
+void Widget::removePartner(const quint32 ip)
 {
     if (_partner.contains(ip))
     {
@@ -579,6 +585,95 @@ void Widget::removePartner(quint32 ip)
             ui->btnAudio->setDisabled(true);
         }
     }
+}
+
+void Widget::clearPartner()
+{
+    ui->labMainWindow->setPixmap(QPixmap());
+    if (_partner.size() == 0) return;
+    auto iter = _partner.begin();
+    while (iter != _partner.end())
+    {
+        auto ip = iter.key();
+        iter++;
+        auto *p = _partner.take(ip);
+        vlayoutScroll->removeWidget(p);
+        delete p;
+        p = nullptr;
+    }
+
+    // close audio
+    disconnect(_ainput, SLOT(setVolumn(int)));
+    disconnect(_aoutput, SLOT(setVolumn(int)));
+    _ainput->stopCollect();
+    _aoutput->stopPlay();
+    ui->btnAudio->setText(OPENAUDIO);
+    ui->btnAudio->setDisabled(true);
+
+    //close image sending thread
+    if (_imgThread->isRunning())
+    {
+        _imgThread->quit();
+        _imgThread->wait();
+    }
+    ui->btnVideo->setText(OPENVIDEO);
+    ui->btnVideo->setDisabled(true);
+}
+
+void Widget::recvip(quint32 ip)
+{
+    if (_partner.contains(mainIp))
+    {
+        auto *p = _partner[mainIp];
+        p->setStyleSheet("border-width: 1px; border-style: solid; border-color:rgba(0, 0 , 255, 0.7)");
+    }
+    if (_partner.contains(ip))
+    {
+        auto *p = _partner[mainIp];
+        p->setStyleSheet("border-width: 1px; border-style: solid; border-color:rgba(255, 0 , 0, 0.7)");
+    }
+    ui->labMainWindow->setPixmap(QPixmap::fromImage(QImage(":/myImage/resourse/1.jpg").scaled(ui->labMainWindow->size())));
+    mainIp = ip;
+    auto str_ip = QHostAddress(mainIp).toString();
+    ui->groupBoxMainWindow->setTitle(str_ip);
+    qDebug() << str_ip;
+}
+
+void Widget::closeImg(const quint32 ip)
+{
+    auto str_ip = QHostAddress(mainIp).toString();
+    qDebug() << "try to close camera of " + str_ip;
+    if (!_partner.contains(ip))
+    {
+        qDebug() << "close camera error: can not find the user: " + str_ip;
+        return;
+    }
+    auto *p = _partner[ip];
+    p->setPic(QImage(":/myImage/resourse/1.jpg"));
+    qDebug() << "peer camera closed";
+    if (ip == mainIp)
+        ui->labMainWindow->setPixmap(QPixmap::fromImage(QImage(":/myImage/resourse/1.jpg").scaled(ui->labMainWindow->size())));
+}
+
+void Widget::audioError(QString err)
+{
+    QMessageBox::warning(this, "Audio error", err, QMessageBox::Yes);
+}
+
+void Widget::speaks(const QString ip)
+{
+    ui->labOutLog->setText(QString(ip + "正在说话").toUtf8());
+}
+
+void Widget::paintEvent(QPaintEvent *event)
+{
+    Q_UNUSED(event);
+    /*
+     * 触发事件(3条， 一般使用第二条进行触发)
+     * 1. 窗口部件第一次显示时，系统会自动产生一个绘图事件。从而强制绘制这个窗口部件，主窗口起来会绘制一次
+     * 2. 当重新调整窗口部件的大小时，系统也会产生一个绘制事件--QWidget::update()或者QWidget::repaint()
+     * 3. 当窗口部件被其它窗口部件遮挡，然后又再次显示出来时，就会对那些隐藏的区域产生一个绘制事件
+    */
 }
 
 Widget::~Widget()

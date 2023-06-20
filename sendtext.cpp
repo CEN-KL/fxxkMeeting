@@ -18,7 +18,7 @@ void SendText::pushText(MSG_TYPE msgType, QString str)
 {
     queue_lock.lock();
 
-    while (textqueue.size() >= QUEUE_MAXSIZE)
+    while (textqueue.size() > QUEUE_MAXSIZE)
     {
         queue_waitCond.wait(&queue_lock);
     }
@@ -45,12 +45,14 @@ void SendText::run()
                 {
                     queue_lock.unlock();
                     WRITE_LOG("stop sending text thread: 0x%p", QThread::currentThreadId());
+                    return;
                 }
             }
         }
 
         M text = textqueue.front();
         textqueue.pop_front();
+        queue_lock.unlock();
         queue_waitCond.wakeOne();
 
         // 构造消息

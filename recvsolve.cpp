@@ -1,4 +1,5 @@
 #include "recvsolve.h"
+#include <QDebug>
 extern QUEUE_DATA<MESG> queue_recv;
 
 RecvSolve::RecvSolve(QObject *par) : QThread(par)
@@ -22,6 +23,7 @@ void RecvSolve::run()
         }
         MESG *msg = queue_recv.pop_msg();
         if (msg == nullptr) continue;
+        qDebug() << "recvSolve msg_type: " + msg->msg_type;
         emit datarecv(msg);
     }
 }

@@ -43,17 +43,21 @@ bool MyTcpSocket::connectToServer(QString ip, QString port, QIODeviceBase::OpenM
 bool MyTcpSocket::connectServer(QString ip, QString port, QIODeviceBase::OpenModeFlag flag)
 {
     if (_socktcp == nullptr) _socktcp = new QTcpSocket();
-    // 以异步的方式连接到指定ip和端口的服务器，成功后会发送connected信号
-    _socktcp->connectToHost(ip, port.toUShort(), flag);
     // readReady -- 当缓冲区有新数据需要读取时此信号被发射
     connect(_socktcp, SIGNAL(readyRead()), this, SLOT(recvFromSocket()), Qt::UniqueConnection);
     // 处理socket错误
-    connect(_socktcp, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(errorDetect(QAbstractSocket::SocketError)), Qt::UniqueConnection);
+//    connect(_socktcp, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(errorDetect(QAbstractSocket::SocketError)), Qt::UniqueConnection);
+    connect(_socktcp, SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this, SLOT(errorDetect(QAbstractSocket::SocketError)), Qt::UniqueConnection);
 
-    if (_socktcp->waitForConnected(5000))
-        return true;
-    _socktcp->close();
-    return false;
+    // 以异步的方式连接到指定ip和端口的服务器，成功后会发送connected信号
+    _socktcp->connectToHost(ip, port.toUShort(), flag);
+    bool isConnected = _socktcp->waitForConnected(5000);
+    qDebug() << "isConnected: " << isConnected;
+    if (!isConnected) {
+        qDebug() << "connectServer returns false";
+        _socktcp->close();
+    }
+    return isConnected;
 }
 
 void MyTcpSocket::closeSocket()
@@ -353,10 +357,12 @@ void MyTcpSocket::errorDetect(QAbstractSocket::SocketError error)
     memset(msg, 0, sizeof(MESG));
     if (error == QAbstractSocket::RemoteHostClosedError)
     {
+        qDebug() << "RemoteHostClosedError";
         msg->msg_type = RemoteHostClosedError;
     }
     else
     {
+        qDebug() << "OtherNetError";
         msg->msg_type = OtherNetError;
     }
     queue_recv.push_msg(msg);

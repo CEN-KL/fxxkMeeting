@@ -16,9 +16,9 @@ public:
     void setVideoSink( QVideoSink * newVideoSink );
     QVideoSink * videoSink() const;
     void stopCam();
-    inline bool isCameraActive() const { return m_cam->isActive(); }
+    inline bool isCameraActive() const { return m_cam != nullptr && m_cam->isActive(); }
     inline QCamera::Error cameraError() const { return m_cam->error(); }
-    void initCam();
+    bool initCam();
 
 private:
     Q_DISABLE_COPY( Frames )

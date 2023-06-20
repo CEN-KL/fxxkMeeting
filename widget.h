@@ -65,10 +65,10 @@ private:
     void paintEvent(QPaintEvent *event);
 
     QMap<quint32, Partner *> _partner; // 记录房间用户
-    Partner *addPartner(quint32);
-    void removePartner(quint32);
+    Partner *addPartner(const quint32);
+    void removePartner(const quint32);
     void clearPartner();
-    void closeImg(quint32);
+    void closeImg(const quint32);
     QPointer<QVBoxLayout> vlayoutScroll;
 
     // deal message
@@ -90,13 +90,13 @@ private slots:
     void on_btnAudio_clicked();
     void on_btnVideo_clicked();
     void on_btnSend_clicked();
-    void on_horizontalSlider_valueChanged(int val) { emit volumnChange(val); }// 音量条
+    void on_sliderVol_valueChanged(int val) { emit volumnChange(val); }// 音量条
 
     void textSend(); // connected with MyTcpSocket::sendTextOver()
     void cameraImgCaptured(QImage); //connectd with Frames::imageCpatured(QImage)
     void dataSolve(MESG *); // connected with RecvSolve::datarecv(MESG *);
     void audioError(QString);
-    void speaks(QString);
+    void speaks(const QString);
     void recvip(quint32);
 
 signals:
