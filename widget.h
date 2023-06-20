@@ -9,6 +9,7 @@
 #include <QListWidgetItem>
 #include <QPointer>
 #include <QSoundEffect>
+#include <QVBoxLayout>
 
 #include "sendimg.h"
 #include "recvsolve.h"
@@ -68,6 +69,7 @@ private:
     void removePartner(quint32);
     void clearPartner();
     void closeImg(quint32);
+    QPointer<QVBoxLayout> vlayoutScroll;
 
     // deal message
     void dealMessage(ChatMessage *messageW, QListWidgetItem *item, QString text, QString time, QString ip, ChatMessage::user_type utype);
@@ -95,6 +97,7 @@ private slots:
     void dataSolve(MESG *); // connected with RecvSolve::datarecv(MESG *);
     void audioError(QString);
     void speaks(QString);
+    void recvip(quint32);
 
 signals:
     void textReady(MSG_TYPE, QString = "");

@@ -102,6 +102,7 @@ Widget::Widget(QWidget *parent)
     // 滚动条
     ui->scrollArea->verticalScrollBar()->setStyleSheet("QScrollBar:vertical { width:8px; background:rgba(0,0,0,0%); margin:0px,0px,0px,0px; padding-top:9px; padding-bottom:9px; } QScrollBar::handle:vertical { width:8px; background:rgba(0,0,0,25%); border-radius:4px; min-height:20; } QScrollBar::handle:vertical:hover { width:8px; background:rgba(0,0,0,50%); border-radius:4px; min-height:20; } QScrollBar::add-line:vertical { height:9px;width:8px; border-image:url(:/images/a/3.png); subcontrol-position:bottom; } QScrollBar::sub-line:vertical { height:9px;width:8px; border-image:url(:/images/a/1.png); subcontrol-position:top; } QScrollBar::add-line:vertical:hover { height:9px;width:8px; border-image:url(:/images/a/4.png); subcontrol-position:bottom; } QScrollBar::sub-line:vertical:hover { height:9px;width:8px; border-image:url(:/images/a/2.png); subcontrol-position:top; } QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical { background:rgba(0,0,0,10%); border-radius:4px; }");
     ui->listWidget->setStyleSheet("QScrollBar:vertical { width:8px; background:rgba(0,0,0,0%); margin:0px,0px,0px,0px; padding-top:9px; padding-bottom:9px; } QScrollBar::handle:vertical { width:8px; background:rgba(0,0,0,25%); border-radius:4px; min-height:20; } QScrollBar::handle:vertical:hover { width:8px; background:rgba(0,0,0,50%); border-radius:4px; min-height:20; } QScrollBar::add-line:vertical { height:9px;width:8px; border-image:url(:/images/a/3.png); subcontrol-position:bottom; } QScrollBar::sub-line:vertical { height:9px;width:8px; border-image:url(:/images/a/1.png); subcontrol-position:top; } QScrollBar::add-line:vertical:hover { height:9px;width:8px; border-image:url(:/images/a/4.png); subcontrol-position:bottom; } QScrollBar::sub-line:vertical:hover { height:9px;width:8px; border-image:url(:/images/a/2.png); subcontrol-position:top; } QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical { background:rgba(0,0,0,10%); border-radius:4px; }");
+    vlayoutScroll = new QVBoxLayout(ui->scrollAreaWidgetContents);
 
     QFont text_font = this->font();
     text_font.setFamily("Fira Code");
@@ -537,6 +538,46 @@ void Widget::dataSolve(MESG *msg)
     {
         delete msg;
         msg = nullptr;
+    }
+}
+
+Partner *Widget::addPartner(quint32 ip)
+{
+    if (_partner.contains(ip)) return nullptr;
+    Partner *p = new Partner(ui->scrollAreaWidgetContents, ip);
+    connect(p, SIGNAL(sendIp(quint32)), this, SLOT(recvip(quint32)));
+    _partner.insert(ip, p);
+    vlayoutScroll->addWidget(p, 1);
+    if (_partner.size() > 1)
+    {
+        connect(this, SIGNAL(volumnChange(int)), _ainput, SLOT(setVolumn(int)), Qt::UniqueConnection);
+        connect(this, SIGNAL(volumnChange(int)), _aoutput, SLOT(setVolumn(int)), Qt::UniqueConnection);
+        ui->btnAudio->setDisabled(false);
+        ui->btnSend->setDefault(false);
+        _aoutput->startPlay();
+    }
+    return p;
+}
+
+void Widget::removePartner(quint32 ip)
+{
+    if (_partner.contains(ip))
+    {
+        auto *p = _partner[ip];
+        disconnect(p, SIGNAL(sendIp(quint32)), this, SLOT(recvip(quint32)));
+        vlayoutScroll->removeWidget(p);
+        delete p;
+        _partner.remove(ip);
+
+        if (_partner.size() <= 1)
+        {
+            disconnect(_ainput, SLOT(setVolumn(int)));
+            disconnect(_aoutput, SLOT(setVolumn(int)));
+            _ainput->stopCollect();
+            _aoutput->stopPlay();
+            ui->btnAudio->setText(QString(OPENAUDIO).toUtf8());
+            ui->btnAudio->setDisabled(true);
+        }
     }
 }
 
