@@ -10,6 +10,7 @@
 #include <QDateTime>
 #include <QCompleter>
 #include <QStringListModel>
+#include <QPixmap>
 QRect Widget::pos = QRect(-1, -1, -1, -1);
 
 extern LogQueue *logqueue;
@@ -68,8 +69,13 @@ Widget::Widget(QWidget *parent)
     _sendImg->moveToThread(_imgThread);
     _sendImg->start();
 //    _imgThread->start();  在 on_openVideo_clicked中才被启动
-    _frames = new Frames();
-    connect(_frames, SIGNAL(imageCaptured(QImage)), this, SLOT(cameraImgCaptured(QImage)));
+    _camera = new QCamera(this);
+    _videosink = new QVideoSink(this);
+    _capture = new QMediaCaptureSession(this);
+    connect(_videosink, SIGNAL(videoFrameChanged(QVideoFrame)), this, SLOT(frameCaptured(QVideoFrame)));
+//    _frames = new Frames();
+//    _frames->setCamera(_camera);
+//    connect(_frames, SIGNAL(imageCaptured(QImage)), this, SLOT(cameraImgCaptured(QImage)));
     connect(this, SIGNAL(pushImg(QImage)), _sendImg, SLOT(ImageCaptured(QImage)));
     connect(_imgThread, SIGNAL(finished()), _sendImg, SLOT(clearImgQueue()));
 
@@ -180,8 +186,11 @@ void Widget::on_btnJoinMeeting_clicked()
 
 void Widget::on_btnExit_clicked()
 {
-    if (_frames != nullptr && _frames->isCameraActive())
-        _frames->stopCam();
+//    if (_frames != nullptr && _frames->isCameraActive())
+//        _frames->stopCam();
+    if (_camera->isActive())
+        _camera->stop();
+
     _createmeet = false;
     _joinmeet = false;
     ui->btnCreate->setDisabled(true);
@@ -228,11 +237,11 @@ void Widget::on_btnAudio_clicked()
 
 void Widget::on_btnVideo_clicked()
 {
-    if (_frames->isCameraActive())
+    if (_camera->isActive())
     {
-        _frames->stopCam();
+        _camera->stop();
         WRITE_LOG("stop camera");
-        if (_frames->cameraError() == QCamera::NoError)
+        if (_camera->error() == QCamera::NoError)
         {
             _imgThread->quit();
             _imgThread->wait();
@@ -243,20 +252,39 @@ void Widget::on_btnVideo_clicked()
     }
     else
     {
-        if (_frames->initCam())
-        {
-            WRITE_LOG("open camera");
-            if (_frames->cameraError() == QCamera::NoError)
-            {
-                _imgThread->start();
-                ui->btnVideo->setText(QString(CLOSEVIDEO).toUtf8());
-            }
-        }
-        else
+        if (!initCamera())
         {
             QMessageBox::warning(this, "Camera Error", "找不到摄像头", QMessageBox::Yes, QMessageBox::Yes);
         }
+//        _camera->start();
+        WRITE_LOG("open camera");
+        if (_camera->error() == QCamera::NoError)
+        {
+            _imgThread->start();
+            ui->btnVideo->setText(CLOSEVIDEO);
+        }
     }
+}
+
+bool Widget::initCamera()
+{
+    const auto settings = _camera->cameraDevice().videoFormats();
+    if (settings.empty()) return false;
+    auto s = settings.at(0);
+    for (const auto &ss: settings)
+    {
+        if (ss.resolution().width() < s.resolution().width())
+            s = ss;
+    }
+
+    _camera->setFocusMode(QCamera::FocusModeAuto);
+    _camera->setCameraFormat(s);
+
+    _capture->setCamera(_camera);
+    _capture->setVideoSink(_videosink);
+
+    _camera->start();
+    return true;
 }
 
 void Widget::on_btnSend_clicked()
@@ -324,6 +352,57 @@ void Widget::textSend()
     ChatMessage* messageW = (ChatMessage *)ui->listWidget->itemWidget(lastItem);
     messageW->setTextSuccess();
     ui->btnSend->setDisabled(false);
+}
+
+void Widget::frameCaptured(const QVideoFrame &_frame)
+{
+    auto frame = _frame;
+//    frame.map(QVideoFrame::ReadOnly);
+//    auto pf = QVideoFrameFormat::imageFormatFromPixelFormat(frame.pixelFormat());
+//    auto pf = frame.toImage().format();
+//    qDebug() << "img format: " << pf;
+//    QPixmap pix;
+//    auto ret = pix.loadFromData(frame.bits(0), frame.mappedBytes(0));
+//    qDebug() << "ret: " << ret;
+    if (frame.map(QVideoFrame::ReadOnly))
+    {
+//        auto databytes = frame.bits(0);
+//        qDebug() << "mapped bytes: " << frame.mappedBytes(0);
+//        auto videoImg = QImage(frame.bits(0), frame.width(), frame.height(), QVideoFrameFormat::imageFormatFromPixelFormat(frame.pixelFormat()));
+        auto videoImg = frame.toImage().convertToFormat(QImage::Format_RGB32);
+//        if (videoImg.isNull()) qDebug() << "null img";
+        frame.unmap();
+        if (_partner.size() > 1)
+        {
+            emit pushImg(videoImg);
+        }
+        if (_mytcpsocket->getLocalIP() == mainIp)
+        {
+            ui->labMainWindow->setPixmap(QPixmap::fromImage(videoImg).scaled(ui->labMainWindow->size()));
+        }
+
+        auto *p = _partner[_mytcpsocket->getLocalIP()];
+        if (p)
+            p->setPic(videoImg);
+    }
+//    auto f = frame;
+//    f.map(QVideoFrame::ReadOnly);
+//    qDebug() << "is valid" << f.isValid();
+//    qDebug() << "is Readable" << f.isReadable();
+
+//    QImage videoImg = frame.toImage();
+//    if (_partner.size() > 1)
+//    {
+//        emit pushImg(videoImg);
+//    }
+//    if (_mytcpsocket->getLocalIP() == mainIp)
+//    {
+//        ui->labMainWindow->setPixmap(QPixmap::fromImage(videoImg).scaled(ui->labMainWindow->size()));
+//    }
+
+//    auto *p = _partner[_mytcpsocket->getLocalIP()];
+//    if (p)
+//        p->setPic(videoImg);
 }
 
 void Widget::cameraImgCaptured(QImage img)

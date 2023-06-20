@@ -39,7 +39,8 @@ void Frames::newFrame(const QVideoFrame &frame)
 
 bool Frames::initCam()
 {
-    m_cam = new QCamera(this);
+    if (m_cam == nullptr)
+        m_cam = new QCamera(this);
     const auto settings = m_cam->cameraDevice().videoFormats();
     if (settings.empty()) return false;
     auto s = settings.at(0);
@@ -88,6 +89,16 @@ void Frames::setVideoSink( QVideoSink * newVideoSink )
     m_videoSink = newVideoSink;
 
     emit videoSinkChanged();
+}
+
+void Frames::setCamera(QCamera *cam)
+{
+    if (m_cam->isActive())
+    {
+        stopCam();
+    }
+    m_cam = cam;
+
 }
 
 void Frames::timer()

@@ -14,6 +14,7 @@ public:
     explicit Frames(QObject *par = nullptr);
     ~Frames() override;
     void setVideoSink( QVideoSink * newVideoSink );
+    void setCamera(QCamera * cam);
     QVideoSink * videoSink() const;
     void stopCam();
     inline bool isCameraActive() const { return m_cam != nullptr && m_cam->isActive(); }

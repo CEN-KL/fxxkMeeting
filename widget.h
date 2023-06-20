@@ -10,6 +10,9 @@
 #include <QPointer>
 #include <QSoundEffect>
 #include <QVBoxLayout>
+#include <QVideoSink>
+#include <QMediaCaptureSession>
+#include <QImageCapture>
 
 #include "sendimg.h"
 #include "recvsolve.h"
@@ -19,7 +22,7 @@
 #include "audiooutput.h"
 #include "chatmessage.h"
 #include "partner.h"
-#include "frames.h"
+//#include "frames.h"
 #include "screen.h"
 #include "logqueue.h"
 
@@ -42,6 +45,11 @@ private:
     static QRect pos;
     quint32 mainIp; //主屏幕显示的IP图像
 //    QImageCapture *_imgcapture; //截屏
+    QCamera *_camera;
+    QVideoSink *_videosink;
+    QMediaCaptureSession *_capture;
+    QImageCapture *_imgCaptured;
+
     bool _createmeet; // 是否创建会议
     bool _joinmeet;   // 是否加入会议
     bool _openCamera; // 是否打开摄像头
@@ -50,7 +58,8 @@ private:
     MyTcpSocket *_mytcpsocket;
 
     // 视频帧发送、接收
-    Frames * _frames;
+//    Frames * _frames;
+    bool initCamera();
     QVideoFrame _mainshow;
     SendImg *_sendImg;
     QThread *_imgThread;
@@ -94,6 +103,7 @@ private slots:
 
     void textSend(); // connected with MyTcpSocket::sendTextOver()
     void cameraImgCaptured(QImage); //connectd with Frames::imageCpatured(QImage)
+    void frameCaptured(const QVideoFrame &);
     void dataSolve(MESG *); // connected with RecvSolve::datarecv(MESG *);
     void audioError(QString);
     void speaks(const QString);
