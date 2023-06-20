@@ -18,6 +18,7 @@ public:
     void stopCam();
     inline bool isCameraActive() const { return m_cam->isActive(); }
     inline QCamera::Error cameraError() const { return m_cam->error(); }
+    void initCam();
 
 private:
     Q_DISABLE_COPY( Frames )
@@ -31,7 +32,6 @@ private:
 
 private slots:
     void newFrame(const QVideoFrame &frame);
-    void initCam();
     void timer();
 signals:
     void imageCaptured(const QImage &);

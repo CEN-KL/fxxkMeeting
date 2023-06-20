@@ -9,7 +9,7 @@ class AudioOutput : public QThread
 {
     Q_OBJECT
 public:
-    AudioOutput(QObject *par);
+    AudioOutput(QObject *par = nullptr);
     ~AudioOutput();
     void stopImmediately();
     void startPlay();

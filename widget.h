@@ -97,7 +97,7 @@ private slots:
     void speaks(QString);
 
 signals:
-    void textReady(MSG_TYPE, QString);
+    void textReady(MSG_TYPE, QString = "");
     void pushImg(QImage);  // emitted on slot Widget::cameraImgCaptured(QImage)
     void startAudio();
     void stopAudio();

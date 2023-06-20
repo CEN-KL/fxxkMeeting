@@ -71,7 +71,7 @@ Widget::Widget(QWidget *parent)
     _frames = new Frames();
     connect(_frames, SIGNAL(imageCaptured(QImage)), this, SLOT(cameraImgCaptured(QImage)));
     connect(this, SIGNAL(pushImg(QImage)), _sendImg, SLOT(ImageCaptured(QImage)));
-    connect(_imgThread, SIGNAL(finished()), this, _sendImg, SLOT(clearImgQueue()));
+    connect(_imgThread, SIGNAL(finished()), _sendImg, SLOT(clearImgQueue()));
 
 
     // 文本传输 包括创建、加入、退出、关闭摄像头信号
@@ -97,7 +97,7 @@ Widget::Widget(QWidget *parent)
 
     // 播放音效
     _soundEffect = new QSoundEffect(this);
-    _soundEffect->setSource(QUrl::fromLocalFile(":/myEffect/resourse/2.wav");
+    _soundEffect->setSource(QUrl::fromLocalFile(":/myEffect/resourse/2.wav"));
 
     // 滚动条
     ui->scrollArea->verticalScrollBar()->setStyleSheet("QScrollBar:vertical { width:8px; background:rgba(0,0,0,0%); margin:0px,0px,0px,0px; padding-top:9px; padding-bottom:9px; } QScrollBar::handle:vertical { width:8px; background:rgba(0,0,0,25%); border-radius:4px; min-height:20; } QScrollBar::handle:vertical:hover { width:8px; background:rgba(0,0,0,50%); border-radius:4px; min-height:20; } QScrollBar::add-line:vertical { height:9px;width:8px; border-image:url(:/images/a/3.png); subcontrol-position:bottom; } QScrollBar::sub-line:vertical { height:9px;width:8px; border-image:url(:/images/a/1.png); subcontrol-position:top; } QScrollBar::add-line:vertical:hover { height:9px;width:8px; border-image:url(:/images/a/4.png); subcontrol-position:bottom; } QScrollBar::sub-line:vertical:hover { height:9px;width:8px; border-image:url(:/images/a/2.png); subcontrol-position:top; } QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical { background:rgba(0,0,0,10%); border-radius:4px; }");
@@ -150,7 +150,7 @@ void Widget::on_btnConnect_clicked()
     {
         ui->labOutLog->setText("连接失败，请重新连接");
         WRITE_LOG("failed to connenct %s:%s", ip.toStdString().c_str(), port.toStdString().c_str());
-        QMessageBox::warning(this, "Connection error", _mytcpSocket->errorString() , QMessageBox::Yes, QMessageBox::Yes);
+        QMessageBox::warning(this, "Connection error", _mytcpsocket->errorString() , QMessageBox::Yes, QMessageBox::Yes);
     }
 }
 
@@ -170,7 +170,7 @@ void Widget::on_btnCreate_clicked()
 void Widget::on_btnJoinMeeting_clicked()
 {
     QString roomNo = ui->lineJoinMeeting->text();
-    QRegularExpression roomReg = ("^[1-9][0-9]{1, 8}$");
+    QRegularExpression roomReg("^[1-9][0-9]{1, 8}$");
     if (!roomReg.match(roomNo).isValid())
         QMessageBox::warning(this, "RoomNo Error", "房间号不合法", QMessageBox::Yes, QMessageBox::Yes);
     else
@@ -263,7 +263,7 @@ void Widget::on_btnSend_clicked()
     qDebug() << msg;
     ui->plainTextEdit->setPlainTextEdit("");
     QString time = QString::number(QDateTime::currentDateTimeUtc().toSecsSinceEpoch());
-    ChatMessage *message = new ChatMessageui(ui->listWidget);
+    ChatMessage *message = new ChatMessage(ui->listWidget);
     QListWidgetItem *item = new QListWidgetItem();
     dealMessageTime(time);
     dealMessage(message, item, msg, time, QHostAddress(_mytcpsocket->getLocalIP()).toString(), ChatMessage::User_me);
@@ -316,7 +316,7 @@ void Widget::textSend()
     QListWidgetItem* lastItem = ui->listWidget->item(ui->listWidget->count() - 1);
     ChatMessage* messageW = (ChatMessage *)ui->listWidget->itemWidget(lastItem);
     messageW->setTextSuccess();
-    ui->sendmsg->setDisabled(false);
+    ui->btnSend->setDisabled(false);
 }
 
 void Widget::cameraImgCaptured(QImage img)
@@ -346,7 +346,7 @@ void Widget::dataSolve(MESG *msg)
             QMessageBox::information(this, "Room No", QString("房间号：%1").arg(roomNo), QMessageBox::Yes, QMessageBox::Yes);
 
             ui->groupBoxMainWindow->setTitle(QString("主屏幕(房间号: %1)").arg(roomNo));
-            ui->labOutLog->setText(QString("创建成功 房间号: %1").arg(roomno) );
+            ui->labOutLog->setText(QString("创建成功 房间号: %1").arg(roomNo) );
             WRITE_LOG("succeed creating room %d", roomNo);
             _createmeet = true;
             ui->btnExit->setDisabled(false);
@@ -435,8 +435,8 @@ void Widget::dataSolve(MESG *msg)
         ChatMessage *message = new ChatMessage(ui->listWidget);
         QListWidgetItem *item = new QListWidgetItem();
         dealMessageTime(time);
-        dealMessage(message, item, str, time, QHostAddress(msg->ip).toString() ,ChatMessage::User_She);
-        if(str.contains('@' + QHostAddress(_mytcpSocket->getlocalip()).toString()))
+        dealMessage(message, item, str, time, QHostAddress(msg->ip).toString() ,ChatMessage::User_she);
+        if(str.contains('@' + QHostAddress(_mytcpsocket->getLocalIP()).toString()))
         {
             _soundEffect->play();
         }
@@ -449,7 +449,7 @@ void Widget::dataSolve(MESG *msg)
             p->setPic(QImage(":/myImage/resourse/1.jpg"));
             ui->labOutLog->setText(QString("%1 join meeting").arg(QHostAddress(msg->ip).toString()));
             _iplist.append(QString("@") + QHostAddress(msg->ip).toString());
-            ui->plainTextEdit->setCompleter(iplist);
+            ui->plainTextEdit->setCompleter(_iplist);
         }
     }
     else if (msg->msg_type == PARTNER_JOIN2)
@@ -466,13 +466,13 @@ void Widget::dataSolve(MESG *msg)
             if (p)
             {
                 qDebug() << "start setting image";
-                p->setpic(QImage(":/myImage/resourse/1.jpg"));
-                iplist << QString("@") + QHostAddress(ip).toString();
+                p->setPic(QImage(":/myImage/resourse/1.jpg"));
+                _iplist << QString("@") + QHostAddress(ip).toString();
             }
             qDebug() << "set image";
         }
         qDebug() << "record ip tp iplist";
-        ui->plainTextEdit->setCompleter(iplist);
+        ui->plainTextEdit->setCompleter(_iplist);
         ui->btnVideo->setDisabled(false);
     }
     else if (msg->msg_type == PARTNER_EXIT)
@@ -544,10 +544,10 @@ Widget::~Widget()
 {
     //终止底层发送与接收线程
 
-    if(_mytcpSocket->isRunning())
+    if(_mytcpsocket->isRunning())
     {
-        _mytcpSocket->stopImmediately();
-        _mytcpSocket->wait();
+        _mytcpsocket->stopImmedeiately();
+        _mytcpsocket->wait();
     }
 
     //终止接收处理线程
