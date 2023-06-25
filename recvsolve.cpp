@@ -23,7 +23,7 @@ void RecvSolve::run()
         }
         MESG *msg = queue_recv.pop_msg();
         if (msg == nullptr) continue;
-        qDebug() << "recvSolve msg_type: " + msg->msg_type;
+//        qDebug() << "recvSolve msg_type: " + msg->msg_type;
         emit datarecv(msg);
     }
 }

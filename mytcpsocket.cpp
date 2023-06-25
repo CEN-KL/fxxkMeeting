@@ -92,6 +92,8 @@ void MyTcpSocket::recvFromSocket()
         quint32 data_len;
         qFromBigEndian<quint32>(recvbuf + 7, 4, &data_len);
         quint32 data_size = data_len;
+        if (hasrecv < static_cast<quint64>(data_size) + 1 + MSG_HEADER)
+            return;
         if (recvbuf[0] == '$' && recvbuf[MSG_HEADER + data_size] == '#')
         {
             uint16_t type;
@@ -254,6 +256,9 @@ void MyTcpSocket::recvFromSocket()
         else
         {
             qDebug() << "pakage error";
+//            qDebug() << "recvbuf[0] == " << static_cast<uchar>(recvbuf[0]);
+//            qDebug() << "data_size == " << data_size;
+//            qDebug() << "recvbuf[-1] == " << static_cast<uchar>(recvbuf[MSG_HEADER + data_size]);
         }
     }
 }
