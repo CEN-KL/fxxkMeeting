@@ -55,11 +55,11 @@ void SendImg::pushToQueue(QImage img)
     QByteArray byte;
     QBuffer buf(&byte);
     buf.open(QIODevice::WriteOnly);
-    img.save(&buf, "JPEG");
+    img.save(&buf, "PNG");
     QByteArray ss = qCompress(byte);
     QByteArray vv = ss.toBase64();
     queue_lock.lock();
-    while (img_queue.size() >= QUEUE_MAXSIZE)
+    while (img_queue.size() > QUEUE_MAXSIZE)
     {
         queue_waitCond.wait(&queue_lock);
     }
