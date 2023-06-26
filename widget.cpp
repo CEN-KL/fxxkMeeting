@@ -493,14 +493,16 @@ void Widget::dataSolve(MESG *msg)
     }
     else if (msg->msg_type == IMG_RECV)
     {
-        QHostAddress a(msg->ip);
-        qDebug() << a.toString();
+//        QHostAddress a(msg->ip);
+//        qDebug() << a.toString();
+        qDebug() << "img ip : " << QHostAddress(msg->ip).toString();
         QImage img;
         img.loadFromData(msg->data, msg->len);
         if (_partner.count(msg->ip) == 1)
         {
             auto *p = _partner[msg->ip];
-            p->setPic(img);
+            if (QDateTime::currentMSecsSinceEpoch() - p->lastClose > 5000)
+                p->setPic(img);
         }
         else
         {
@@ -721,7 +723,11 @@ void Widget::recvip(quint32 ip)
 
 void Widget::closeImg(const quint32 ip)
 {
-    auto str_ip = QHostAddress(mainIp).toString();
+//    qDebug() << "_partners ip:";
+//    foreach(quint32 _ip, _partner.keys()) {
+//        qDebug() << QHostAddress(_ip).toString();
+//    }
+    auto str_ip = QHostAddress(ip).toString();
     qDebug() << "try to close camera of " + str_ip;
     if (!_partner.contains(ip))
     {
@@ -730,6 +736,7 @@ void Widget::closeImg(const quint32 ip)
     }
     auto *p = _partner[ip];
     p->setPic(QImage(":/myImage/resourse/1.jpg"));
+    p->lastClose = QDateTime::currentMSecsSinceEpoch();
     qDebug() << "peer camera closed";
     if (ip == mainIp)
         ui->labMainWindow->setPixmap(QPixmap::fromImage(QImage(":/myImage/resourse/1.jpg").scaled(ui->labMainWindow->size())));

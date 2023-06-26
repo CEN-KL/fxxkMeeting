@@ -10,6 +10,7 @@ class Partner : public QLabel
 public:
     Partner(QWidget * par, quint32 = 0);
     void setPic(QImage);
+    qint64 lastClose = 0;
 private:
     quint32 ip;
 

@@ -92,173 +92,178 @@ void MyTcpSocket::recvFromSocket()
         quint32 data_len;
         qFromBigEndian<quint32>(recvbuf + 7, 4, &data_len);
         quint32 data_size = data_len;
-        if (hasrecv < static_cast<quint64>(data_size) + 1 + MSG_HEADER)
-            return;
-        if (recvbuf[0] == '$' && recvbuf[MSG_HEADER + data_size] == '#')
+        if (hasrecv >= static_cast<quint64>(data_size) + 1 + MSG_HEADER)
         {
-            uint16_t type;
-            qFromBigEndian<uint16_t>(recvbuf + 1, 2, &type);
-            MSG_TYPE msgtype = static_cast<MSG_TYPE>(type);
-            qDebug() << "recv data type: " << msgtype;
-            // 分别处理不同类型的消息
-            if (msgtype == CREATE_MEETING_RESPONSE)
+            if (recvbuf[0] == '$' && recvbuf[MSG_HEADER + data_size] == '#')
             {
-                qint32 roomNo;
-                qFromBigEndian<qint32>(recvbuf + MSG_HEADER, 4, &roomNo);
+                uint16_t type;
+                qFromBigEndian<uint16_t>(recvbuf + 1, 2, &type);
+                MSG_TYPE msgtype = static_cast<MSG_TYPE>(type);
+                qDebug() << "recv data type: " << msgtype;
+                // 分别处理不同类型的消息
+                if (msgtype == CREATE_MEETING_RESPONSE)
+                {
+                    qint32 roomNo;
+                    qFromBigEndian<qint32>(recvbuf + MSG_HEADER, 4, &roomNo);
 
-                MESG *msg = new MESG();
-                if (msg == nullptr)
-                {
-                    qDebug() << __LINE__ << "CREATING_MEETING_RESPONSE new MESG failed";
-                }
-                else
-                {
-                    memset(msg, 0, sizeof(MESG));
-                    msg->msg_type = msgtype;
-                    msg->data = new uchar[data_size];
-                    if (msg->data == nullptr)
+                    MESG *msg = new MESG();
+                    if (msg == nullptr)
                     {
-                        delete msg;
-                        qDebug() << __LINE__ << "CREATING_MEETING_RESPONSE new MESG.data failed";
+                        qDebug() << __LINE__ << "CREATING_MEETING_RESPONSE new MESG failed";
                     }
                     else
                     {
-                        memset(msg->data, 0, data_size);
-                        memcpy(msg->data, &roomNo, sizeof(roomNo));
-                        msg->len = data_size;
-                        queue_recv.push_msg(msg);
-                    }
-                }
-            }
-            else if (msgtype == JOIN_MEETING_RESPONSE)
-            {
-                qint32 c;
-                memcpy(&c, recvbuf + MSG_HEADER, data_size);
-
-                MESG* msg = new MESG();
-                if (msg == nullptr)
-                {
-                    qDebug() << __LINE__ << "JOIN_MEETING_RESPONSE new MESG failed";
-                }
-                else
-                {
-                    memset(msg, 0, sizeof(MESG));
-                    msg->msg_type = msgtype;
-                    msg->data = new uchar[data_size];
-                    if (msg->data == nullptr)
-                    {
-                        delete msg;
-                        qDebug() << __LINE__ << "JOIN_MEETING_RESPONSE new MESG.data failed";
-                    }
-                    else
-                    {
-                        memset(msg->data, 0, data_size);
-                        memcpy(msg->data, &c, data_size);
-
-                        msg->len = data_size;
-                        queue_recv.push_msg(msg);
-                    }
-                }
-            }
-            else if (msgtype == PARTNER_JOIN2)
-            {
-                MESG *msg = new MESG();
-                if (msg == nullptr)
-                {
-                    qDebug() << "PARTNER_JOIN2 new MESG error";
-                }
-                else
-                {
-                    memset(msg, 0, sizeof(MESG));
-                    msg->msg_type = msgtype;
-                    msg->len = data_size;
-                    msg->data = new uchar[data_size];
-                    if (msg->data == nullptr)
-                    {
-                        delete msg;
-                        qDebug() << "PARTNER_JOIN2 new MESG.data error";
-                    }
-                    else
-                    {
-                        memset(msg->data, 0, data_size);
-                        uint32_t ip;
-                        int pos = 0;
-                        for (decltype(data_size) i = 0; i < data_size / sizeof(uint32_t); i++)
+                        memset(msg, 0, sizeof(MESG));
+                        msg->msg_type = msgtype;
+                        msg->data = new uchar[data_size];
+                        if (msg->data == nullptr)
                         {
-                            qFromBigEndian<uint32_t>(recvbuf + MSG_HEADER + pos, sizeof(uint32_t), &ip);
-                            memcpy_s(msg->data + pos, data_size - pos, &ip, sizeof(uint32_t));
-                            pos += sizeof(uint32_t);
+                            delete msg;
+                            qDebug() << __LINE__ << "CREATING_MEETING_RESPONSE new MESG.data failed";
                         }
-                        queue_recv.push_msg(msg);
-                    }
-                }
-            }
-            else if (msgtype == IMG_RECV || msgtype == AUDIO_RECV || msgtype == TEXT_RECV || msgtype == PARTNER_JOIN || msgtype == PARTNER_EXIT || msgtype == CLOSE_CAMERA)
-            {
-                quint32 ip;
-                qFromBigEndian<quint32>(recvbuf + 3, 4, &ip);
-
-                if (msgtype == IMG_RECV || msgtype == AUDIO_RECV)
-                {
-                    QByteArray cc((char *)recvbuf + MSG_HEADER, data_size);
-                    QByteArray rc = QByteArray::fromBase64(cc);
-                    QByteArray rdc = qUncompress(rc);
-
-                    if (rdc.size() > 0)
-                    {
-                        MESG *msg = new MESG();
-                        memset(msg, 0, sizeof(MESG));
-                        msg->msg_type = msgtype;
-                        msg->data = new uchar[rdc.size()];
-                        memset(msg->data, 0, rdc.size());
-                        memcpy_s(msg->data, rdc.size(), rdc.data(), rdc.size());
-                        msg->len = rdc.size();
-                        msg->ip = ip;
-                        if (msgtype == IMG_RECV)
-                            queue_recv.push_msg(msg);
                         else
-                            audio_recv.push_msg(msg);
+                        {
+                            memset(msg->data, 0, data_size);
+                            memcpy(msg->data, &roomNo, sizeof(roomNo));
+                            msg->len = data_size;
+                            queue_recv.push_msg(msg);
+                        }
                     }
                 }
-                else if (msgtype == TEXT_RECV)
+                else if (msgtype == JOIN_MEETING_RESPONSE)
                 {
-                    QByteArray cc((char *)recvbuf + MSG_HEADER, data_size);
-                    std::string rr = qUncompress(cc).toStdString();
-                    if (rr.size() > 0)
+                    qint32 c;
+                    memcpy(&c, recvbuf + MSG_HEADER, data_size);
+
+                    MESG* msg = new MESG();
+                    if (msg == nullptr)
                     {
-                        MESG *msg = new MESG();
+                        qDebug() << __LINE__ << "JOIN_MEETING_RESPONSE new MESG failed";
+                    }
+                    else
+                    {
                         memset(msg, 0, sizeof(MESG));
                         msg->msg_type = msgtype;
-                        msg->ip = ip;
-                        msg->data = new uchar[rr.size()];
-                        memset(msg->data, 0, rr.size());
-                        memcpy_s(msg->data, rr.size(), rr.data(), rr.size());
-                        msg->len = rr.size();
-                        queue_recv.push_msg(msg);
+                        msg->data = new uchar[data_size];
+                        if (msg->data == nullptr)
+                        {
+                            delete msg;
+                            qDebug() << __LINE__ << "JOIN_MEETING_RESPONSE new MESG.data failed";
+                        }
+                        else
+                        {
+                            memset(msg->data, 0, data_size);
+                            memcpy(msg->data, &c, data_size);
+
+                            msg->len = data_size;
+                            queue_recv.push_msg(msg);
+                        }
                     }
                 }
-                else if (msgtype == PARTNER_JOIN || msgtype == PARTNER_EXIT || msgtype == CLOSE_CAMERA)
+                else if (msgtype == PARTNER_JOIN2)
                 {
                     MESG *msg = new MESG();
-                    memset(msg, 0, sizeof(MESG));
-                    msg->msg_type = msgtype;
-                    msg->ip = ip;
-                    queue_recv.push_msg(msg);
+                    if (msg == nullptr)
+                    {
+                        qDebug() << "PARTNER_JOIN2 new MESG error";
+                    }
+                    else
+                    {
+                        memset(msg, 0, sizeof(MESG));
+                        msg->msg_type = msgtype;
+                        msg->len = data_size;
+                        msg->data = new uchar[data_size];
+                        if (msg->data == nullptr)
+                        {
+                            delete msg;
+                            qDebug() << "PARTNER_JOIN2 new MESG.data error";
+                        }
+                        else
+                        {
+                            memset(msg->data, 0, data_size);
+                            uint32_t ip;
+                            int pos = 0;
+                            for (decltype(data_size) i = 0; i < data_size / sizeof(uint32_t); i++)
+                            {
+                                qFromBigEndian<uint32_t>(recvbuf + MSG_HEADER + pos, sizeof(uint32_t), &ip);
+                                memcpy_s(msg->data + pos, data_size - pos, &ip, sizeof(uint32_t));
+                                pos += sizeof(uint32_t);
+                            }
+                            queue_recv.push_msg(msg);
+                        }
+                    }
                 }
+                else if (msgtype == IMG_RECV || msgtype == AUDIO_RECV || msgtype == TEXT_RECV || msgtype == PARTNER_JOIN || msgtype == PARTNER_EXIT || msgtype == CLOSE_CAMERA)
+                {
+                    quint32 ip;
+                    qFromBigEndian<quint32>(recvbuf + 3, 4, &ip);
+//                    qDebug() << "recv ip to IMG_RECV and CLOSE_CAMERA: " << ip;
+
+                    if (msgtype == IMG_RECV || msgtype == AUDIO_RECV)
+                    {
+                        QByteArray cc((char *)recvbuf + MSG_HEADER, data_size);
+                        QByteArray rc = QByteArray::fromBase64(cc);
+                        QByteArray rdc = qUncompress(rc);
+
+                        if (rdc.size() > 0)
+                        {
+                            MESG *msg = new MESG();
+                            memset(msg, 0, sizeof(MESG));
+                            msg->msg_type = msgtype;
+                            msg->data = new uchar[rdc.size()];
+                            memset(msg->data, 0, rdc.size());
+                            memcpy_s(msg->data, rdc.size(), rdc.data(), rdc.size());
+                            msg->len = rdc.size();
+                            msg->ip = ip;
+                            if (msgtype == IMG_RECV)
+                                queue_recv.push_msg(msg);
+                            else
+                                audio_recv.push_msg(msg);
+                        }
+                    }
+                    else if (msgtype == TEXT_RECV)
+                    {
+                        QByteArray cc((char *)recvbuf + MSG_HEADER, data_size);
+                        std::string rr = qUncompress(cc).toStdString();
+                        if (rr.size() > 0)
+                        {
+                            MESG *msg = new MESG();
+                            memset(msg, 0, sizeof(MESG));
+                            msg->msg_type = msgtype;
+                            msg->ip = ip;
+                            msg->data = new uchar[rr.size()];
+                            memset(msg->data, 0, rr.size());
+                            memcpy_s(msg->data, rr.size(), rr.data(), rr.size());
+                            msg->len = rr.size();
+                            queue_recv.push_msg(msg);
+                        }
+                    }
+                    else if (msgtype == PARTNER_JOIN || msgtype == PARTNER_EXIT || msgtype == CLOSE_CAMERA)
+                    {
+                        MESG *msg = new MESG();
+                        memset(msg, 0, sizeof(MESG));
+                        msg->msg_type = msgtype;
+                        msg->ip = ip;
+                        queue_recv.push_msg(msg);
+                    }
+                }
+                else
+                {
+                    qDebug() << "msg type error";
+                }
+//                hasrecv -= static_cast<quint64>(data_size + 1 + MSG_HEADER);
+//                memmove_s(recvbuf, 4 * MB, recvbuf + MSG_HEADER + data_size + 1, hasrecv);
             }
             else
             {
-                qDebug() << "msg type error";
+                qDebug() << "pakage error";
             }
             hasrecv -= static_cast<quint64>(data_size + 1 + MSG_HEADER);
             memmove_s(recvbuf, 4 * MB, recvbuf + MSG_HEADER + data_size + 1, hasrecv);
         }
         else
         {
-            qDebug() << "pakage error";
-//            qDebug() << "recvbuf[0] == " << static_cast<uchar>(recvbuf[0]);
-//            qDebug() << "data_size == " << data_size;
-//            qDebug() << "recvbuf[-1] == " << static_cast<uchar>(recvbuf[MSG_HEADER + data_size]);
+            return;
         }
     }
 }
