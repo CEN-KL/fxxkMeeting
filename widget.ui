@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1212</width>
-    <height>776</height>
+    <width>1296</width>
+    <height>784</height>
    </rect>
   </property>
   <property name="font">
    <font>
-    <family>Fira Code</family>
-    <pointsize>12</pointsize>
+    <family>Microsoft YaHei UI</family>
+    <pointsize>9</pointsize>
    </font>
   </property>
   <property name="windowTitle">
@@ -62,7 +62,7 @@
         <item>
          <widget class="QLineEdit" name="lineIP">
           <property name="text">
-           <string>43.138.140.157</string>
+           <string>10.249.182.86</string>
           </property>
          </widget>
         </item>
@@ -208,7 +208,7 @@
       </property>
       <property name="maximumSize">
        <size>
-        <width>300</width>
+        <width>400</width>
         <height>16777215</height>
        </size>
       </property>
@@ -230,8 +230,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>280</width>
-             <height>503</height>
+             <width>380</width>
+             <height>534</height>
             </rect>
            </property>
           </widget>

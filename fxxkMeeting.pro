@@ -14,7 +14,6 @@ SOURCES += \
     audioinput.cpp \
     audiooutput.cpp \
     chatmessage.cpp \
-    frames.cpp \
     logqueue.cpp \
     main.cpp \
     mytcpsocket.cpp \
@@ -31,7 +30,6 @@ HEADERS += \
     audioinput.h \
     audiooutput.h \
     chatmessage.h \
-    frames.h \
     logqueue.h \
     mytcpsocket.h \
     mytextedit.h \

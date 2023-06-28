@@ -19,6 +19,7 @@ Widget::Widget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::Widget)
 {
+//    qDebug() << "Wdiget::Widget tid = " << QThread::currentThreadId();
     // 日志线程
     logqueue = new LogQueue();
     logqueue->start();
@@ -92,7 +93,7 @@ Widget::Widget(QWidget *parent)
     _ainput       = new AudioInput();
     _ainputThread = new QThread();
     _ainput->moveToThread(_ainputThread);
-    _ainputThread->start(); //获取音频，发送； 在相应槽函数中再启动
+//    _ainputThread->start(); //获取音频，发送； 在相应槽函数中再启动
     _aoutput      = new AudioOutput();
     _aoutput->start();
     connect(this,     SIGNAL(startAudio()), _ainput, SLOT(startCollect()));
@@ -224,7 +225,7 @@ void Widget::on_btnAudio_clicked()
     if (!_createmeet && !_joinmeet) return;
     if (ui->btnAudio->text().toUtf8() == QString(OPENAUDIO).toUtf8())
     {
-//        _ainputThread->start();
+        _ainputThread->start();
         emit startAudio();
         ui->btnAudio->setText(QString(CLOSEAUDIO).toUtf8());
     }
@@ -631,6 +632,7 @@ void Widget::dataSolve(MESG *msg)
 
 Partner *Widget::addPartner(const quint32 ip)
 {
+//    qDebug() << "Widget::startPlay tid = " << QThread::currentThreadId();
     if (_partner.contains(ip)) return nullptr;
     Partner *p = new Partner(ui->scrollAreaWidgetContents, ip);
     connect(p, SIGNAL(sendIp(quint32)), this, SLOT(recvip(quint32)));

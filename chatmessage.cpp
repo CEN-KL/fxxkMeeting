@@ -9,7 +9,7 @@
 ChatMessage::ChatMessage(QWidget *par): QWidget(par)
 {
     QFont text_font = this->font();
-    text_font.setFamily("Fira Code");
+    text_font.setFamily("MicrosoftYaHei");
     text_font.setPointSize(12);
     m_leftPixmap = QPixmap(":/myImage/resourse/1.jpg");
     m_rightPixmap = QPixmap(":/myImage/resourse/1.jpg");
@@ -59,14 +59,14 @@ void ChatMessage::setText(QString text, QString time, QSize size, QString ip, us
 QSize ChatMessage::fontRect(QString str)
 {
     m_msg = str;
-    int minHeight = 30;
-    int iconWidth = 40;
+    int minHeight      = 30;
+    int iconWidth      = 40;
     int iconSpaceWidth = 20;
-    int iconRectWidth = 5;
-    int iconTMPH = 10;
-    int triangelWidth = 6;
-    int boxTMP = 20;
-    int textSpaceRect = 12;
+    int iconRectWidth  = 5;
+    int iconTMPH       = 10;
+    int triangelWidth  = 6;
+    int boxTMP         = 20;
+    int textSpaceRect  = 12;
 
     m_boxWidth = this->width() - boxTMP - 2 * (iconWidth + iconSpaceWidth + iconRectWidth);
     m_textWidth = m_boxWidth - 2 * textSpaceRect; // 文字消息块宽度
@@ -74,6 +74,9 @@ QSize ChatMessage::fontRect(QString str)
     m_iconLeftRect  = QRect(iconSpaceWidth, iconTMPH + 10, iconWidth, iconWidth);
     m_iconRightRect = QRect(this->width() - iconSpaceWidth - iconWidth, iconTMPH + 10
                             , iconWidth, iconWidth);
+
+    qDebug() << "this->width() = " << this->width(); // 294
+    qDebug() << "textWidth     = " << m_textWidth; //
 
     QSize size = getRealString(m_msg); // 整体size
 
@@ -115,11 +118,11 @@ QSize ChatMessage::fontRect(QString str)
 QSize ChatMessage::getRealString(QString src)
 {
     QFontMetricsF fm(this->font());
-    m_lineHeight = fm.lineSpacing(); // 获取行高
+    m_lineHeight = fm.lineSpacing() * 1.5; // 获取行高
     int nCount = src.count("\n");
     int nMaxWidth = 0;
     if(nCount == 0) {
-        nMaxWidth = fm.horizontalAdvance(src);
+        nMaxWidth = fm.horizontalAdvance(src) * 1.5;
         QString value = src;
         if(nMaxWidth > m_textWidth) {
             // 如果字符串宽度超过预设的 m_textWidth 就要进行换行处理 ; 换行符个数num

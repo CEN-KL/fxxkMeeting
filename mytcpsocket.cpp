@@ -218,7 +218,10 @@ void MyTcpSocket::recvFromSocket()
                             if (msgtype == IMG_RECV)
                                 queue_recv.push_msg(msg);
                             else
+                            {
+//                                qDebug() << "push to audio_recv";
                                 audio_recv.push_msg(msg);
+                            }
                         }
                     }
                     else if (msgtype == TEXT_RECV)
