@@ -18,6 +18,7 @@ private:
     QAudioSink *audiosink;
     QIODevice *outputdevice;
     QMutex device_lock;
+    QByteArray m_pcmDataBuffer;
 
     volatile bool isCanRun;
     QMutex m_lock;

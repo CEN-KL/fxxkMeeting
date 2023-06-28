@@ -3,6 +3,7 @@
 #include <QMediaDevices>
 #include <QHostAddress>
 
+//const quint32 FRAME_LEN_60MS = 960;
 const quint32 FRAME_LEN_125MS = 1900;
 
 extern QUEUE_DATA<MESG> audio_recv;
@@ -22,6 +23,7 @@ AudioOutput::AudioOutput(QObject *par): QThread(par)
     }
     audiosink = new QAudioSink(format, this);
     connect(audiosink, SIGNAL(stateChanged(QAudio::State)), this, SLOT(handleStateChanged(QAudio::State)));
+    m_pcmDataBuffer.clear();
     outputdevice = nullptr;
 }
 
@@ -57,8 +59,9 @@ QString AudioOutput::errorString()
 void AudioOutput::run()
 {
     isCanRun = true;
-    QByteArray m_pcmDataBuffer;
-
+//    QByteArray m_pcmDataBuffer;
+//    qDebug() << "start running...";
+//    qDebug() << "AudioOutput::run tid = " << QThread::currentThreadId();
     WRITE_LOG("start palying audio thread 0x%p", QThread::currentThreadId());
     while (true)
     {
@@ -72,9 +75,13 @@ void AudioOutput::run()
             }
         }
         MESG *msg = audio_recv.pop_msg();
-        if (msg == nullptr) continue;
+//        qDebug() << "pop audio_msg";
+        if (msg == nullptr)
+            continue;
+
         {
-            QMutexLocker locker(&m_lock);
+            QMutexLocker locker(&device_lock);
+//            qDebug() << "obtain device_lock";
             if (outputdevice != nullptr)
             {
                 m_pcmDataBuffer.append((char *)msg->data, msg->len);
@@ -98,6 +105,7 @@ void AudioOutput::run()
             {
                 m_pcmDataBuffer.clear();
             }
+//            qDebug() << "free device_lock";
         }
         if (msg->data) delete msg->data;
         if (msg) delete msg;
@@ -123,6 +131,7 @@ void AudioOutput::clearQueue()
 
 void AudioOutput::startPlay()
 {
+//    qDebug() << "AudioOutput::startPlay tid = " << QThread::currentThreadId();
     if (audiosink->state() == QAudio::ActiveState) return;
     WRITE_LOG("start playing audio");
     outputdevice = audiosink->start();
